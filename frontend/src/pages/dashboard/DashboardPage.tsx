@@ -16,6 +16,7 @@ import {
 } from "recharts";
 
 import { BalanceModal } from "../../components/balance-modal/BalanceModal";
+import { Loader } from "../../components/loader/Loader";
 
 import {
   getStoredUser,
@@ -24,6 +25,8 @@ import {
 } from "../../services/auth/authService";
 
 import type { User } from "../../types/auth/user";
+
+const LOGOUT_LOADER_MIN_TIME = 450;
 
 const betData = [
   {
@@ -68,6 +71,19 @@ const pieColors = [
   "#FF5252",
 ];
 
+function wait(
+  milliseconds: number,
+) {
+  return new Promise<void>(
+    (resolve) => {
+      window.setTimeout(
+        resolve,
+        milliseconds,
+      );
+    },
+  );
+}
+
 export function DashboardPage() {
   const navigate =
     useNavigate();
@@ -82,10 +98,31 @@ export function DashboardPage() {
     setShowBalanceModal,
   ] = useState(false);
 
-  function handleLogout() {
-    logoutUser();
+  const [
+    loggingOut,
+    setLoggingOut,
+  ] = useState(false);
 
-    navigate("/login");
+  async function handleLogout() {
+    if (loggingOut) {
+      return;
+    }
+
+    setLoggingOut(true);
+
+    try {
+      logoutUser();
+
+      await wait(
+        LOGOUT_LOADER_MIN_TIME,
+      );
+
+      navigate("/login", {
+        replace: true,
+      });
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   function handleBalanceSuccess(
@@ -95,6 +132,15 @@ export function DashboardPage() {
       updateUserBalance(amount);
 
     setUser(updatedUser);
+  }
+
+  if (loggingOut) {
+    return (
+      <Loader
+        fullScreen
+        message="Cerrando sesión..."
+      />
+    );
   }
 
   if (!user) {
@@ -115,8 +161,10 @@ export function DashboardPage() {
         </div>
 
         <button
+          type="button"
           className="secondary-button"
           onClick={handleLogout}
+          disabled={loggingOut}
         >
           Cerrar sesión
         </button>
