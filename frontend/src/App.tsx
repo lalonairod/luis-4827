@@ -9,26 +9,30 @@ import {
   Routes,
 } from "react-router-dom";
 
-import { DashboardPage } from "./pages/dashboard/DashboardPage";
-import { LoginPage } from "./pages/login/LoginPage";
-import { RegisterPage } from "./pages/login/RegisterPage";
 import { Loader } from "./components/loader/Loader";
+
 import { ProtectedRoute } from "./components/protected-route/ProtectedRoute";
 
+import { PublicRoute } from "./components/public-route/PublicRoute";
+
+import { DashboardPage } from "./pages/dashboard/DashboardPage";
+
+import { LoginPage } from "./pages/login/LoginPage";
+
+import { RegisterPage } from "./pages/login/RegisterPage";
+
+import { isAuthenticated } from "./services/auth/authService";
+
 export default function App() {
-  const [initializing, setInitializing] =
-    useState(true);
+  const [
+    initializing,
+    setInitializing,
+  ] = useState(true);
 
   useEffect(() => {
-    const timeout =
-      window.setTimeout(() => {
-        setInitializing(false);
-      }, 450);
+    isAuthenticated();
 
-    return () =>
-      window.clearTimeout(
-        timeout,
-      );
+    setInitializing(false);
   }, []);
 
   if (initializing) {
@@ -43,16 +47,24 @@ export default function App() {
   return (
     <Routes>
       <Route
-        path="/register"
         element={
-          <RegisterPage />
+          <PublicRoute />
         }
-      />
+      >
+        <Route
+          path="/register"
+          element={
+            <RegisterPage />
+          }
+        />
 
-      <Route
-        path="/login"
-        element={<LoginPage />}
-      />
+        <Route
+          path="/login"
+          element={
+            <LoginPage />
+          }
+        />
+      </Route>
 
       <Route
         element={
@@ -71,7 +83,11 @@ export default function App() {
         path="*"
         element={
           <Navigate
-            to="/login"
+            to={
+              isAuthenticated()
+                ? "/dashboard"
+                : "/login"
+            }
             replace
           />
         }

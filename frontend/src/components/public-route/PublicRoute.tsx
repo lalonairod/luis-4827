@@ -5,11 +5,11 @@ import {
 
 import { isAuthenticated } from "../../services/auth/authService";
 
-export function ProtectedRoute() {
-  if (!isAuthenticated()) {
+export function PublicRoute() {
+  if (isAuthenticated()) {
     return (
       <Navigate
-        to="/login"
+        to="/dashboard"
         replace
       />
     );

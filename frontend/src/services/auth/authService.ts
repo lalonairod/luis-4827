@@ -1,21 +1,53 @@
 import type { Session } from "../../types/auth/session";
 import type { User } from "../../types/auth/user";
 
-
 const USER_KEY = "snail_user";
 const SESSION_KEY = "snail_session";
 
-async function hashPassword(password: string): Promise<string> {
-  const data = new TextEncoder().encode(password);
+async function hashPassword(
+  password: string,
+): Promise<string> {
+  const data =
+    new TextEncoder().encode(
+      password,
+    );
 
-  const hashBuffer = await crypto.subtle.digest(
-    "SHA-256",
-    data,
-  );
+  const hashBuffer =
+    await crypto.subtle.digest(
+      "SHA-256",
+      data,
+    );
 
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
+  return Array.from(
+    new Uint8Array(hashBuffer),
+  )
+    .map((byte) =>
+      byte
+        .toString(16)
+        .padStart(2, "0"),
+    )
     .join("");
+}
+
+function parseStoredValue<T>(
+  key: string,
+): T | null {
+  const storedValue =
+    localStorage.getItem(key);
+
+  if (!storedValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(
+      storedValue,
+    ) as T;
+  } catch {
+    localStorage.removeItem(key);
+
+    return null;
+  }
 }
 
 export async function registerUser(
@@ -23,26 +55,41 @@ export async function registerUser(
   email: string,
   password: string,
 ): Promise<User> {
-  const existingUser = getStoredUser();
+  const existingUser =
+    getStoredUser();
+
+  const normalizedEmail =
+    email
+      .trim()
+      .toLowerCase();
 
   if (
     existingUser &&
-    existingUser.email.toLowerCase() === email.toLowerCase()
+    existingUser.email.toLowerCase() ===
+      normalizedEmail
   ) {
-    throw new Error("Ya existe un usuario con ese correo");
+    throw new Error(
+      "Ya existe un usuario con ese correo",
+    );
   }
 
-  const passwordHash = await hashPassword(password);
+  const passwordHash =
+    await hashPassword(
+      password,
+    );
 
   const user: User = {
     id: crypto.randomUUID(),
     fullName: fullName.trim(),
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     password: passwordHash,
     balance: 0,
   };
 
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(
+    USER_KEY,
+    JSON.stringify(user),
+  );
 
   return user;
 }
@@ -51,19 +98,32 @@ export async function loginUser(
   email: string,
   password: string,
 ): Promise<Session> {
-  const user = getStoredUser();
+  const user =
+    getStoredUser();
 
   if (!user) {
-    throw new Error("Usuario no encontrado");
+    throw new Error(
+      "Correo o contraseña incorrectos",
+    );
   }
 
-  const passwordHash = await hashPassword(password);
+  const passwordHash =
+    await hashPassword(
+      password,
+    );
+
+  const normalizedEmail =
+    email
+      .trim()
+      .toLowerCase();
 
   if (
-    user.email !== email.trim().toLowerCase() ||
+    user.email !== normalizedEmail ||
     user.password !== passwordHash
   ) {
-    throw new Error("Correo o contraseña incorrectos");
+    throw new Error(
+      "Correo o contraseña incorrectos",
+    );
   }
 
   const session: Session = {
@@ -80,37 +140,63 @@ export async function loginUser(
 }
 
 export function logoutUser(): void {
-  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(
+    SESSION_KEY,
+  );
 }
 
-export function getStoredUser(): User | null {
-  const storedUser = localStorage.getItem(USER_KEY);
+export function getStoredUser():
+  User | null {
+  return parseStoredValue<User>(
+    USER_KEY,
+  );
+}
 
-  if (!storedUser) {
-    return null;
+export function getSession():
+  Session | null {
+  return parseStoredValue<Session>(
+    SESSION_KEY,
+  );
+}
+
+export function isAuthenticated():
+  boolean {
+  const user =
+    getStoredUser();
+
+  const session =
+    getSession();
+
+  if (!user || !session) {
+    if (session) {
+      localStorage.removeItem(
+        SESSION_KEY,
+      );
+    }
+
+    return false;
   }
 
-  return JSON.parse(storedUser) as User;
-}
+  const validSession =
+    session.userId === user.id &&
+    session.email === user.email;
 
-export function getSession(): Session | null {
-  const storedSession = localStorage.getItem(SESSION_KEY);
+  if (!validSession) {
+    localStorage.removeItem(
+      SESSION_KEY,
+    );
 
-  if (!storedSession) {
-    return null;
+    return false;
   }
 
-  return JSON.parse(storedSession) as Session;
-}
-
-export function isAuthenticated(): boolean {
-  return getSession() !== null;
+  return true;
 }
 
 export function updateUserBalance(
   amount: number,
 ): User {
-  const user = getStoredUser();
+  const user =
+    getStoredUser();
 
   if (!user) {
     throw new Error(
@@ -120,7 +206,8 @@ export function updateUserBalance(
 
   const updatedUser: User = {
     ...user,
-    balance: user.balance + amount,
+    balance:
+      user.balance + amount,
   };
 
   localStorage.setItem(
