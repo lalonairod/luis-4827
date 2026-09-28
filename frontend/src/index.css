@@ -959,3 +959,29 @@ a:focus-visible {
     max-height: calc(100dvh - 16px);
   }
 }
+
+.input-error {
+  border-color: #ff5252 !important;
+
+  box-shadow:
+    0 0 0 2px rgba(255, 82, 82, 0.08);
+}
+
+.input-error:focus {
+  border-color: #ff5252 !important;
+
+  box-shadow:
+    0 0 0 3px rgba(255, 82, 82, 0.12);
+}
+
+.field-error {
+  display: block;
+
+  margin-top: 6px;
+
+  color: #ff6b6b;
+
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}

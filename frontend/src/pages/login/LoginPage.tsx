@@ -1,16 +1,99 @@
-import { useState, type SyntheticEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  useRef,
+  useState,
+  type SyntheticEvent,
+} from "react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
 
 import { Loader } from "../../components/loader/Loader";
+
 import { loginUser } from "../../services/auth/authService";
 
-export function LoginPage() {
-  const navigate = useNavigate();
+import type { LoginFieldErrors } from "../../types/forms/login-field-errors";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+const EMAIL_REGEX =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function LoginPage() {
+  const navigate =
+    useNavigate();
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [
+    fieldErrors,
+    setFieldErrors,
+  ] = useState<LoginFieldErrors>(
+    {},
+  );
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const emailRef =
+    useRef<HTMLInputElement>(null);
+
+  const passwordRef =
+    useRef<HTMLInputElement>(null);
+
+  function clearFieldError(
+    field: keyof LoginFieldErrors,
+  ) {
+    setFieldErrors((current) => ({
+      ...current,
+      [field]: undefined,
+    }));
+  }
+
+  function validateForm(): boolean {
+    const errors: LoginFieldErrors =
+      {};
+
+    const normalizedEmail =
+      email.trim();
+
+    if (!normalizedEmail) {
+      errors.email =
+        "Ingresa tu correo electrónico.";
+    } else if (
+      !EMAIL_REGEX.test(
+        normalizedEmail,
+      )
+    ) {
+      errors.email =
+        "Ingresa un correo electrónico válido.";
+    }
+
+    if (!password) {
+      errors.password =
+        "Ingresa tu contraseña.";
+    }
+
+    setFieldErrors(errors);
+
+    if (errors.email) {
+      emailRef.current?.focus();
+      return false;
+    }
+
+    if (errors.password) {
+      passwordRef.current?.focus();
+      return false;
+    }
+
+    return true;
+  }
 
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement>,
@@ -22,10 +105,18 @@ export function LoginPage() {
     }
 
     setError("");
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await loginUser(email, password);
+      await loginUser(
+        email.trim(),
+        password,
+      );
 
       navigate("/dashboard");
     } catch (error) {
@@ -39,38 +130,68 @@ export function LoginPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <Loader
+        fullScreen
+        message="Iniciando sesión..."
+      />
+    );
+  }
+
   return (
     <main className="auth-page">
-      {loading && (
-        <Loader
-          fullScreen
-          message="Iniciando sesión..."
-        />
-      )}
-
       <section className="auth-card">
-        <h1>Iniciar sesión</h1>
+        <h1>
+          Iniciar sesión
+        </h1>
 
         <p className="auth-subtitle">
-          Ingresa tus datos para continuar.
+          Ingresa tus datos para
+          continuar.
         </p>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+        >
           <div className="form-group">
             <label htmlFor="email">
               Correo electrónico
             </label>
 
             <input
+              ref={emailRef}
               id="email"
               type="email"
-              value={email}
-              disabled={loading}
               autoComplete="email"
-              onChange={(event) =>
-                setEmail(event.target.value)
+              value={email}
+              className={
+                fieldErrors.email
+                  ? "input-error"
+                  : ""
               }
+              aria-invalid={
+                Boolean(
+                  fieldErrors.email,
+                )
+              }
+              onChange={(event) => {
+                setEmail(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  "email",
+                );
+              }}
             />
+
+            {fieldErrors.email && (
+              <span className="field-error">
+                {fieldErrors.email}
+              </span>
+            )}
           </div>
 
           <div className="form-group">
@@ -79,15 +200,39 @@ export function LoginPage() {
             </label>
 
             <input
+              ref={passwordRef}
               id="password"
               type="password"
-              value={password}
-              disabled={loading}
               autoComplete="current-password"
-              onChange={(event) =>
-                setPassword(event.target.value)
+              value={password}
+              className={
+                fieldErrors.password
+                  ? "input-error"
+                  : ""
               }
+              aria-invalid={
+                Boolean(
+                  fieldErrors.password,
+                )
+              }
+              onChange={(event) => {
+                setPassword(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  "password",
+                );
+              }}
             />
+
+            {fieldErrors.password && (
+              <span className="field-error">
+                {
+                  fieldErrors.password
+                }
+              </span>
+            )}
           </div>
 
           {error && (
