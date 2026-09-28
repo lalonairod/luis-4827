@@ -15,11 +15,28 @@ import { loginUser } from "../../services/auth/authService";
 
 import type { LoginFieldErrors } from "../../types/forms/login-field-errors";
 
+/**
+ * Expresión regular utilizada para validar
+ * el formato básico del correo electrónico.
+ */
 const EMAIL_REGEX =
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Tiempo mínimo, en milisegundos, durante el cual
+ * se muestra el loader al iniciar sesión.
+ */
 const LOGIN_LOADER_MIN_TIME = 450;
 
+/**
+ * Genera una espera asíncrona durante el tiempo indicado.
+ *
+ * Se utiliza para mantener visible el estado de carga
+ * durante la transición posterior al inicio de sesión.
+ *
+ * @param milliseconds - Tiempo de espera en milisegundos.
+ * @returns Una promesa que se resuelve después del tiempo indicado.
+ */
 function wait(
   milliseconds: number,
 ) {
@@ -33,6 +50,19 @@ function wait(
   );
 }
 
+/**
+ * Página encargada del inicio de sesión de usuarios.
+ *
+ * Gestiona:
+ * - Captura de correo electrónico y contraseña.
+ * - Validación local de los campos.
+ * - Visualización de errores por campo.
+ * - Autenticación mediante el servicio de sesión.
+ * - Estado de carga durante el proceso.
+ * - Redirección al dashboard después de un acceso exitoso.
+ *
+ * @returns El formulario de inicio de sesión.
+ */
 export function LoginPage() {
   const navigate =
     useNavigate();
@@ -62,6 +92,12 @@ export function LoginPage() {
   const passwordRef =
     useRef<HTMLInputElement>(null);
 
+  /**
+   * Limpia el mensaje de validación asociado
+   * a un campo específico del formulario.
+   *
+   * @param field - Campo cuyo error debe eliminarse.
+   */
   function clearFieldError(
     field: keyof LoginFieldErrors,
   ) {
@@ -71,6 +107,19 @@ export function LoginPage() {
     }));
   }
 
+  /**
+   * Valida los datos capturados en el formulario.
+   *
+   * Comprueba que:
+   * - El correo sea obligatorio y tenga un formato válido.
+   * - La contraseña sea obligatoria.
+   *
+   * Cuando existe un error, coloca el foco
+   * en el primer campo inválido.
+   *
+   * @returns true cuando el formulario es válido;
+   * false en caso contrario.
+   */
   function validateForm(): boolean {
     const errors: LoginFieldErrors =
       {};
@@ -112,6 +161,18 @@ export function LoginPage() {
     return true;
   }
 
+  /**
+   * Procesa el envío del formulario de inicio de sesión.
+   *
+   * Valida los campos, ejecuta la autenticación y,
+   * cuando las credenciales son correctas, redirige
+   * al usuario al dashboard.
+   *
+   * También gestiona el estado de carga y los errores
+   * devueltos durante el proceso.
+   *
+   * @param event - Evento de envío del formulario.
+   */
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement>,
   ) {

@@ -26,8 +26,16 @@ import {
 
 import type { User } from "../../types/auth/user";
 
+/**
+ * Tiempo mínimo, en milisegundos, durante el cual
+ * se muestra el loader al cerrar sesión.
+ */
 const LOGOUT_LOADER_MIN_TIME = 450;
 
+/**
+ * Datos simulados utilizados para representar
+ * el resumen de apuestas ganadas y perdidas.
+ */
 const betData = [
   {
     name: "Ganadas",
@@ -39,6 +47,10 @@ const betData = [
   },
 ];
 
+/**
+ * Datos simulados utilizados para representar
+ * las victorias de cada caracol.
+ */
 const snailData = [
   {
     name: "Turbo",
@@ -66,11 +78,24 @@ const snailData = [
   },
 ];
 
+/**
+ * Colores utilizados en la gráfica circular
+ * de resultados de apuestas.
+ */
 const pieColors = [
   "#FFBF00",
   "#FF5252",
 ];
 
+/**
+ * Genera una espera asíncrona durante el tiempo indicado.
+ *
+ * Se utiliza únicamente para mantener visible el estado
+ * de carga durante ciertas transiciones de interfaz.
+ *
+ * @param milliseconds - Tiempo de espera en milisegundos.
+ * @returns Una promesa que se resuelve después del tiempo indicado.
+ */
 function wait(
   milliseconds: number,
 ) {
@@ -84,6 +109,19 @@ function wait(
   );
 }
 
+/**
+ * Página principal mostrada después de iniciar sesión.
+ *
+ * Presenta:
+ * - Información básica del usuario.
+ * - Saldo disponible.
+ * - Acceso al modal de carga de saldo.
+ * - Resumen gráfico de apuestas.
+ * - Resultados simulados de carreras.
+ * - Flujo de cierre de sesión.
+ *
+ * @returns El dashboard principal del usuario.
+ */
 export function DashboardPage() {
   const navigate =
     useNavigate();
@@ -103,6 +141,12 @@ export function DashboardPage() {
     setLoggingOut,
   ] = useState(false);
 
+  /**
+   * Procesa el cierre de sesión del usuario.
+   *
+   * Elimina la sesión almacenada, muestra un estado
+   * de carga durante la transición y redirige al login.
+   */
   async function handleLogout() {
     if (loggingOut) {
       return;
@@ -125,6 +169,12 @@ export function DashboardPage() {
     }
   }
 
+  /**
+   * Actualiza el saldo del usuario después
+   * de una transacción aprobada por SnailPay.
+   *
+   * @param amount - Monto acreditado al saldo.
+   */
   function handleBalanceSuccess(
     amount: number,
   ) {

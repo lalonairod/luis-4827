@@ -15,9 +15,27 @@ import { registerUser } from "../../services/auth/authService";
 
 import type { RegisterFieldErrors } from "../../types/forms/register-field-errors";
 
+/**
+ * Expresión regular utilizada para validar
+ * el formato básico del correo electrónico.
+ */
 const EMAIL_REGEX =
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Página encargada del registro de nuevos usuarios.
+ *
+ * Gestiona:
+ * - Captura de datos personales y credenciales.
+ * - Sanitización del nombre completo.
+ * - Validación local de los campos.
+ * - Visualización de errores por campo.
+ * - Registro del usuario mediante el servicio de autenticación.
+ * - Estado de carga durante el proceso.
+ * - Redirección al login después de un registro exitoso.
+ *
+ * @returns El formulario de registro de usuario.
+ */
 export function RegisterPage() {
   const navigate =
     useNavigate();
@@ -62,6 +80,12 @@ export function RegisterPage() {
   const passwordConfirmationRef =
     useRef<HTMLInputElement>(null);
 
+  /**
+   * Limpia el mensaje de validación asociado
+   * a un campo específico del formulario.
+   *
+   * @param field - Campo cuyo error debe eliminarse.
+   */
   function clearFieldError(
     field: keyof RegisterFieldErrors,
   ) {
@@ -71,6 +95,21 @@ export function RegisterPage() {
     }));
   }
 
+  /**
+   * Valida los datos capturados en el formulario de registro.
+   *
+   * Comprueba que:
+   * - El nombre sea obligatorio y tenga una longitud mínima.
+   * - El correo sea obligatorio y tenga un formato válido.
+   * - La contraseña tenga al menos 6 caracteres.
+   * - La confirmación coincida con la contraseña.
+   *
+   * Cuando existe un error, coloca el foco
+   * en el primer campo inválido.
+   *
+   * @returns true cuando el formulario es válido;
+   * false en caso contrario.
+   */
   function validateForm(): boolean {
     const errors: RegisterFieldErrors =
       {};
@@ -155,6 +194,18 @@ export function RegisterPage() {
     return true;
   }
 
+  /**
+   * Procesa el envío del formulario de registro.
+   *
+   * Valida los datos capturados, registra al usuario
+   * y redirige al login cuando la operación finaliza
+   * correctamente.
+   *
+   * Si el correo ya se encuentra registrado, muestra
+   * el error directamente sobre el campo correspondiente.
+   *
+   * @param event - Evento de envío del formulario.
+   */
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement>,
   ) {
