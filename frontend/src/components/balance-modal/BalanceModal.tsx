@@ -6,21 +6,30 @@ import {
 } from "react";
 
 import { createPortal } from "react-dom";
-
 import { chargeBalance } from "../../services/snail-pay/snailPayService";
-
 import { Loader } from "../loader/Loader";
 
-import type { User } from "../../types/auth/user";
 import type { SnailPayResponse } from "../../types/snail-pay/snail-pay-response";
 import type { BalanceModalFieldErrors } from "../../types/forms/balance-modal-field-errors";
+import type { BalanceModalProps } from "../../types/balance-modal/balance-modal-props";
 
-interface BalanceModalProps {
-  user: User;
-  onClose: () => void;
-  onSuccess: (amount: number) => void;
-}
-
+/**
+ * Modal encargado de capturar y procesar una carga de saldo
+ * mediante el servicio simulado SnailPay.
+ *
+ * Gestiona:
+ * - Captura y validación de datos de pago.
+ * - Visualización de errores por campo.
+ * - Simulación de errores internos del proveedor.
+ * - Estado de carga durante el procesamiento.
+ * - Notificación de una transacción aprobada.
+ *
+ * El componente se renderiza mediante un portal directamente
+ * sobre el body del documento.
+ *
+ * @param props - Propiedades del componente.
+ * @returns El modal de carga de saldo.
+ */
 export function BalanceModal({
   user,
   onClose,
@@ -75,6 +84,13 @@ export function BalanceModal({
   const amountRef =
     useRef<HTMLInputElement>(null);
 
+  /**
+   * Bloquea el desplazamiento del documento mientras
+   * el modal se encuentra abierto.
+   *
+   * Al desmontar el componente se restaura el comportamiento
+   * normal del body.
+   */
   useEffect(() => {
     document.body.style.overflow =
       "hidden";
@@ -85,6 +101,11 @@ export function BalanceModal({
     };
   }, []);
 
+  /**
+   * Limpia el mensaje de validación asociado a un campo.
+   *
+   * @param field - Campo cuyo error debe eliminarse.
+   */
   function clearFieldError(
     field: keyof BalanceModalFieldErrors,
   ) {
@@ -94,12 +115,23 @@ export function BalanceModal({
     }));
   }
 
+  /**
+   * Formatea la fecha de vencimiento de la tarjeta
+   * utilizando el formato MM/AA.
+   *
+   * Elimina caracteres no numéricos y limita el valor
+   * a cuatro dígitos.
+   *
+   * @param value - Valor capturado en el input.
+   * @returns Fecha formateada en formato MM/AA.
+   */
   function formatExpirationDate(
     value: string,
   ) {
-    const numbersOnly = value
-      .replace(/\D/g, "")
-      .slice(0, 4);
+    const numbersOnly =
+      value
+        .replace(/\D/g, "")
+        .slice(0, 4);
 
     if (numbersOnly.length <= 2) {
       return numbersOnly;
@@ -111,6 +143,16 @@ export function BalanceModal({
     )}/${numbersOnly.slice(2)}`;
   }
 
+  /**
+   * Valida los datos capturados en el formulario de pago.
+   *
+   * Si existe algún error:
+   * - Actualiza los mensajes de validación.
+   * - Coloca el foco en el primer campo inválido.
+   *
+   * @returns true cuando todos los campos son válidos;
+   * false en caso contrario.
+   */
   function validateForm(): boolean {
     const errors: BalanceModalFieldErrors =
       {};
@@ -143,7 +185,9 @@ export function BalanceModal({
       Number(amount);
 
     if (
-      Number.isNaN(numericAmount) ||
+      Number.isNaN(
+        numericAmount,
+      ) ||
       numericAmount <= 0
     ) {
       errors.amount =
@@ -154,32 +198,51 @@ export function BalanceModal({
 
     if (errors.cardNumber) {
       cardNumberRef.current?.focus();
+
       return false;
     }
 
     if (errors.expirationDate) {
       expirationDateRef.current?.focus();
+
       return false;
     }
 
     if (errors.cvv) {
       cvvRef.current?.focus();
+
       return false;
     }
 
     if (errors.amount) {
       amountRef.current?.focus();
+
       return false;
     }
 
     if (errors.fullName) {
       fullNameRef.current?.focus();
+
       return false;
     }
 
     return true;
   }
 
+  /**
+   * Procesa el envío del formulario de carga de saldo.
+   *
+   * Valida los datos capturados y realiza la solicitud
+   * al servicio SnailPay.
+   *
+   * Cuando la operación es aprobada, notifica el monto
+   * acreditado mediante onSuccess y cierra el modal.
+   *
+   * También gestiona los escenarios de transacción rechazada,
+   * error interno del proveedor y error de comunicación.
+   *
+   * @param event - Evento de envío del formulario.
+   */
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement>,
   ) {
@@ -205,8 +268,10 @@ export function BalanceModal({
             cvv,
             fullName:
               fullName.trim(),
-            amount: numericAmount,
-            payerId: user.id,
+            amount:
+              numericAmount,
+            payerId:
+              user.id,
             payerEmail:
               user.email,
           },
@@ -469,7 +534,9 @@ export function BalanceModal({
 
               {fieldErrors.amount && (
                 <span className="field-error">
-                  {fieldErrors.amount}
+                  {
+                    fieldErrors.amount
+                  }
                 </span>
               )}
             </div>
@@ -537,7 +604,9 @@ export function BalanceModal({
             <div className="payment-message payment-message-error">
               <span>!</span>
 
-              <p>{error}</p>
+              <p>
+                {error}
+              </p>
             </div>
           )}
 
