@@ -1,6 +1,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { Loader } from "../../components/loader/Loader";
 import { loginUser } from "../../services/auth/authService";
 
 export function LoginPage() {
@@ -9,13 +10,19 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(
     event: SyntheticEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
+    if (loading) {
+      return;
+    }
+
     setError("");
+    setLoading(true);
 
     try {
       await loginUser(email, password);
@@ -27,70 +34,84 @@ export function LoginPage() {
           ? error.message
           : "No fue posible iniciar sesión",
       );
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-  <main className="auth-page">
-    <section className="auth-card">
-      <h1>Iniciar sesión</h1>
+    <main className="auth-page">
+      {loading && (
+        <Loader
+          fullScreen
+          message="Iniciando sesión..."
+        />
+      )}
 
-      <p className="auth-subtitle">
-        Ingresa tus datos para continuar.
-      </p>
+      <section className="auth-card">
+        <h1>Iniciar sesión</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="email">
-            Correo electrónico
-          </label>
+        <p className="auth-subtitle">
+          Ingresa tus datos para continuar.
+        </p>
 
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
-          />
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">
+              Correo electrónico
+            </label>
 
-        <div className="form-group">
-          <label htmlFor="password">
-            Contraseña
-          </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              disabled={loading}
+              autoComplete="email"
+              onChange={(event) =>
+                setEmail(event.target.value)
+              }
+            />
+          </div>
 
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) =>
-              setPassword(event.target.value)
-            }
-          />
-        </div>
+          <div className="form-group">
+            <label htmlFor="password">
+              Contraseña
+            </label>
 
-        {error && (
-          <p className="form-error">
-            {error}
-          </p>
-        )}
+            <input
+              id="password"
+              type="password"
+              value={password}
+              disabled={loading}
+              autoComplete="current-password"
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
+            />
+          </div>
 
-        <button
-          className="auth-button"
-          type="submit"
-        >
-          Entrar
-        </button>
-      </form>
+          {error && (
+            <p className="form-error">
+              {error}
+            </p>
+          )}
 
-      <p className="auth-link">
-        ¿No tienes cuenta?{" "}
-        <Link to="/register">
-          Registrarte
-        </Link>
-      </p>
-    </section>
-  </main>
-);
+          <button
+            className="auth-button"
+            type="submit"
+            disabled={loading}
+          >
+            Entrar
+          </button>
+        </form>
+
+        <p className="auth-link">
+          ¿No tienes cuenta?{" "}
+          <Link to="/register">
+            Registrarte
+          </Link>
+        </p>
+      </section>
+    </main>
+  );
 }
