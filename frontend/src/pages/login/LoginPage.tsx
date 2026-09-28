@@ -18,6 +18,21 @@ import type { LoginFieldErrors } from "../../types/forms/login-field-errors";
 const EMAIL_REGEX =
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const LOGIN_LOADER_MIN_TIME = 450;
+
+function wait(
+  milliseconds: number,
+) {
+  return new Promise<void>(
+    (resolve) => {
+      window.setTimeout(
+        resolve,
+        milliseconds,
+      );
+    },
+  );
+}
+
 export function LoginPage() {
   const navigate =
     useNavigate();
@@ -84,11 +99,13 @@ export function LoginPage() {
 
     if (errors.email) {
       emailRef.current?.focus();
+
       return false;
     }
 
     if (errors.password) {
       passwordRef.current?.focus();
+
       return false;
     }
 
@@ -113,12 +130,22 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      await loginUser(
-        email.trim(),
-        password,
-      );
+      await Promise.all([
+        loginUser(
+          email.trim(),
+          password,
+        ),
+        wait(
+          LOGIN_LOADER_MIN_TIME,
+        ),
+      ]);
 
-      navigate("/dashboard");
+      navigate(
+        "/dashboard",
+        {
+          replace: true,
+        },
+      );
     } catch (error) {
       setError(
         error instanceof Error
@@ -189,7 +216,9 @@ export function LoginPage() {
 
             {fieldErrors.email && (
               <span className="field-error">
-                {fieldErrors.email}
+                {
+                  fieldErrors.email
+                }
               </span>
             )}
           </div>
