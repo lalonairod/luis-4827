@@ -128,7 +128,7 @@ describe("Auth Service", () => {
         "123456",
       ),
     ).rejects.toThrow(
-      "Usuario no encontrado",
+      "Correo o contraseña incorrectos",
     );
   });
 
@@ -188,6 +188,35 @@ describe("Auth Service", () => {
     );
   });
 
+  it("should return true when the stored session matches the stored user", async () => {
+    await registerUser(
+      "Luis Eduardo Gonzalez",
+      "test@example.com",
+      "123456",
+    );
+
+    await loginUser(
+      "test@example.com",
+      "123456",
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(true);
+  });
+
+  it("should return false when there is no active session", async () => {
+    await registerUser(
+      "Luis Eduardo Gonzalez",
+      "test@example.com",
+      "123456",
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(false);
+  });
+
   it("should remove the active session on logout", async () => {
     await registerUser(
       "Luis Eduardo Gonzalez",
@@ -209,6 +238,169 @@ describe("Auth Service", () => {
     expect(
       isAuthenticated(),
     ).toBe(false);
+  });
+
+  it("should return null and remove a corrupted stored user", () => {
+    localStorage.setItem(
+      "snail_user",
+      "{invalid-json",
+    );
+
+    expect(
+      getStoredUser(),
+    ).toBeNull();
+
+    expect(
+      localStorage.getItem(
+        "snail_user",
+      ),
+    ).toBeNull();
+  });
+
+  it("should return null and remove a corrupted stored session", () => {
+    localStorage.setItem(
+      "snail_session",
+      "{invalid-json",
+    );
+
+    expect(
+      getSession(),
+    ).toBeNull();
+
+    expect(
+      localStorage.getItem(
+        "snail_session",
+      ),
+    ).toBeNull();
+  });
+
+  it("should return false when the stored session is corrupted", async () => {
+    await registerUser(
+      "Luis Eduardo Gonzalez",
+      "test@example.com",
+      "123456",
+    );
+
+    localStorage.setItem(
+      "snail_session",
+      "{invalid-json",
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(false);
+
+    expect(
+      localStorage.getItem(
+        "snail_session",
+      ),
+    ).toBeNull();
+  });
+
+  it("should return false when the stored user is corrupted", () => {
+    localStorage.setItem(
+      "snail_user",
+      "{invalid-json",
+    );
+
+    localStorage.setItem(
+      "snail_session",
+      JSON.stringify({
+        userId: "user-123",
+        email:
+          "test@example.com",
+      }),
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(false);
+
+    expect(
+      localStorage.getItem(
+        "snail_user",
+      ),
+    ).toBeNull();
+
+    expect(
+      localStorage.getItem(
+        "snail_session",
+      ),
+    ).toBeNull();
+  });
+
+  it("should invalidate the session when the userId does not match the stored user", async () => {
+    const user =
+      await registerUser(
+        "Luis Eduardo Gonzalez",
+        "test@example.com",
+        "123456",
+      );
+
+    localStorage.setItem(
+      "snail_session",
+      JSON.stringify({
+        userId:
+          "different-user-id",
+        email:
+          user.email,
+      }),
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(false);
+
+    expect(
+      getSession(),
+    ).toBeNull();
+  });
+
+  it("should invalidate the session when the email does not match the stored user", async () => {
+    const user =
+      await registerUser(
+        "Luis Eduardo Gonzalez",
+        "test@example.com",
+        "123456",
+      );
+
+    localStorage.setItem(
+      "snail_session",
+      JSON.stringify({
+        userId:
+          user.id,
+        email:
+          "another@example.com",
+      }),
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(false);
+
+    expect(
+      getSession(),
+    ).toBeNull();
+  });
+
+  it("should invalidate the session when the stored user does not exist", () => {
+    localStorage.setItem(
+      "snail_session",
+      JSON.stringify({
+        userId:
+          "user-123",
+        email:
+          "test@example.com",
+      }),
+    );
+
+    expect(
+      isAuthenticated(),
+    ).toBe(false);
+
+    expect(
+      getSession(),
+    ).toBeNull();
   });
 
   it("should update and persist the user balance", async () => {
