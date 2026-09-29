@@ -5,6 +5,7 @@ import type { SnailPayResponse } from "../../types/snail-pay/snail-pay-response"
  * URL base utilizada para consumir el servicio SnailPay.
  */
 const API_URL =
+  import.meta.env.VITE_API_URL ??
   "http://localhost:3001/api/snailpay";
 
 /**
@@ -78,9 +79,9 @@ export async function chargeBalance(
 
           ...(simulateSystemError
             ? {
-                "x-simulate-system-error":
-                  "true",
-              }
+              "x-simulate-system-error":
+                "true",
+            }
             : {}),
         },
 
