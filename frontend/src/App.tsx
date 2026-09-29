@@ -1,58 +1,48 @@
 import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
   Navigate,
   Route,
   Routes,
 } from "react-router-dom";
-
+import { ProtectedRoute } from "./components/protected-route/ProtectedRoute";
+import { PublicRoute } from "./components/public-route/PublicRoute";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { LoginPage } from "./pages/login/LoginPage";
 import { RegisterPage } from "./pages/login/RegisterPage";
-import { Loader } from "./components/loader/Loader";
-import { ProtectedRoute } from "./components/protected-route/ProtectedRoute";
+import { isAuthenticated } from "./services/auth/authService";
 
+/**
+ * Componente principal de la aplicación.
+ *
+ * Se encarga de:
+ * - Configurar las rutas públicas.
+ * - Configurar las rutas protegidas.
+ * - Validar el acceso mediante los componentes de ruta.
+ * - Redirigir rutas desconocidas según el estado de autenticación.
+ *
+ * @returns La configuración principal de rutas de la aplicación.
+ */
 export default function App() {
-  const [initializing, setInitializing] =
-    useState(true);
-
-  useEffect(() => {
-    const timeout =
-      window.setTimeout(() => {
-        setInitializing(false);
-      }, 450);
-
-    return () =>
-      window.clearTimeout(
-        timeout,
-      );
-  }, []);
-
-  if (initializing) {
-    return (
-      <Loader
-        fullScreen
-        message="Preparando aplicación..."
-      />
-    );
-  }
-
   return (
     <Routes>
       <Route
-        path="/register"
         element={
-          <RegisterPage />
+          <PublicRoute />
         }
-      />
+      >
+        <Route
+          path="/register"
+          element={
+            <RegisterPage />
+          }
+        />
 
-      <Route
-        path="/login"
-        element={<LoginPage />}
-      />
+        <Route
+          path="/login"
+          element={
+            <LoginPage />
+          }
+        />
+      </Route>
 
       <Route
         element={
@@ -71,7 +61,11 @@ export default function App() {
         path="*"
         element={
           <Navigate
-            to="/login"
+            to={
+              isAuthenticated()
+                ? "/dashboard"
+                : "/login"
+            }
             replace
           />
         }

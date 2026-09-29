@@ -11,5 +11,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/tests",
+    "dist",
+    "node_modules"
+  ]
 }

@@ -1,157 +1,499 @@
-import { useState, type SyntheticEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  useRef,
+  useState,
+  type SyntheticEvent,
+} from "react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import { Loader } from "../../components/loader/Loader";
 
 import { registerUser } from "../../services/auth/authService";
 
+import type { RegisterFieldErrors } from "../../types/forms/register-field-errors";
+
+/**
+ * Expresión regular utilizada para validar
+ * el formato básico del correo electrónico.
+ */
+const EMAIL_REGEX =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Página encargada del registro de nuevos usuarios.
+ *
+ * Gestiona:
+ * - Captura de datos personales y credenciales.
+ * - Sanitización del nombre completo.
+ * - Validación local de los campos.
+ * - Visualización de errores por campo.
+ * - Registro del usuario mediante el servicio de autenticación.
+ * - Estado de carga durante el proceso.
+ * - Redirección al login después de un registro exitoso.
+ *
+ * @returns El formulario de registro de usuario.
+ */
 export function RegisterPage() {
-    const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-    const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [passwordConfirmation, setPasswordConfirmation] =
-        useState("");
+  const [fullName, setFullName] =
+    useState("");
 
-    const [error, setError] = useState("");
+  const [email, setEmail] =
+    useState("");
 
-    async function handleSubmit(
-        event: SyntheticEvent<HTMLFormElement>,
+  const [password, setPassword] =
+    useState("");
+
+  const [
+    passwordConfirmation,
+    setPasswordConfirmation,
+  ] = useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [
+    fieldErrors,
+    setFieldErrors,
+  ] =
+    useState<RegisterFieldErrors>(
+      {},
+    );
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const fullNameRef =
+    useRef<HTMLInputElement>(null);
+
+  const emailRef =
+    useRef<HTMLInputElement>(null);
+
+  const passwordRef =
+    useRef<HTMLInputElement>(null);
+
+  const passwordConfirmationRef =
+    useRef<HTMLInputElement>(null);
+
+  /**
+   * Limpia el mensaje de validación asociado
+   * a un campo específico del formulario.
+   *
+   * @param field - Campo cuyo error debe eliminarse.
+   */
+  function clearFieldError(
+    field: keyof RegisterFieldErrors,
+  ) {
+    setFieldErrors((current) => ({
+      ...current,
+      [field]: undefined,
+    }));
+  }
+
+  /**
+   * Valida los datos capturados en el formulario de registro.
+   *
+   * Comprueba que:
+   * - El nombre sea obligatorio y tenga una longitud mínima.
+   * - El correo sea obligatorio y tenga un formato válido.
+   * - La contraseña tenga al menos 6 caracteres.
+   * - La confirmación coincida con la contraseña.
+   *
+   * Cuando existe un error, coloca el foco
+   * en el primer campo inválido.
+   *
+   * @returns true cuando el formulario es válido;
+   * false en caso contrario.
+   */
+  function validateForm(): boolean {
+    const errors: RegisterFieldErrors =
+      {};
+
+    const normalizedName =
+      fullName.trim();
+
+    const normalizedEmail =
+      email.trim();
+
+    if (!normalizedName) {
+      errors.fullName =
+        "Ingresa tu nombre completo.";
+    } else if (
+      normalizedName.length < 2
     ) {
-        event.preventDefault();
-
-        setError("");
-
-        if (!fullName.trim()) {
-            setError("El nombre es obligatorio");
-            return;
-        }
-
-        if (!email.includes("@")) {
-            setError("Ingresa un correo válido");
-            return;
-        }
-
-        if (password.length < 6) {
-            setError(
-                "La contraseña debe tener al menos 6 caracteres",
-            );
-            return;
-        }
-
-        if (password !== passwordConfirmation) {
-            setError("Las contraseñas no coinciden");
-            return;
-        }
-
-        try {
-            await registerUser(
-                fullName,
-                email,
-                password,
-            );
-
-            navigate("/login");
-        } catch (error) {
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "No fue posible registrar al usuario",
-            );
-        }
+      errors.fullName =
+        "El nombre debe contener al menos 2 caracteres.";
     }
 
+    if (!normalizedEmail) {
+      errors.email =
+        "Ingresa tu correo electrónico.";
+    } else if (
+      !EMAIL_REGEX.test(
+        normalizedEmail,
+      )
+    ) {
+      errors.email =
+        "Ingresa un correo electrónico válido.";
+    }
+
+    if (!password) {
+      errors.password =
+        "Ingresa una contraseña.";
+    } else if (
+      password.length < 6
+    ) {
+      errors.password =
+        "La contraseña debe tener al menos 6 caracteres.";
+    }
+
+    if (!passwordConfirmation) {
+      errors.passwordConfirmation =
+        "Confirma tu contraseña.";
+    } else if (
+      password !==
+      passwordConfirmation
+    ) {
+      errors.passwordConfirmation =
+        "Las contraseñas no coinciden.";
+    }
+
+    setFieldErrors(errors);
+
+    if (errors.fullName) {
+      fullNameRef.current?.focus();
+
+      return false;
+    }
+
+    if (errors.email) {
+      emailRef.current?.focus();
+
+      return false;
+    }
+
+    if (errors.password) {
+      passwordRef.current?.focus();
+
+      return false;
+    }
+
+    if (
+      errors.passwordConfirmation
+    ) {
+      passwordConfirmationRef.current?.focus();
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Procesa el envío del formulario de registro.
+   *
+   * Valida los datos capturados, registra al usuario
+   * y redirige al login cuando la operación finaliza
+   * correctamente.
+   *
+   * Si el correo ya se encuentra registrado, muestra
+   * el error directamente sobre el campo correspondiente.
+   *
+   * @param event - Evento de envío del formulario.
+   */
+  async function handleSubmit(
+    event: SyntheticEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (loading) {
+      return;
+    }
+
+    setError("");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await registerUser(
+        fullName.trim(),
+        email.trim(),
+        password,
+      );
+
+      navigate("/login");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message ===
+          "Ya existe un usuario con ese correo"
+      ) {
+        setFieldErrors(
+          (current) => ({
+            ...current,
+            email:
+              error.message,
+          }),
+        );
+
+        emailRef.current?.focus();
+
+        return;
+      }
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible registrar al usuario",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
     return (
-        <main className="auth-page">
-            <section className="auth-card">
-                <h1>Crear cuenta</h1>
-
-                <p className="auth-subtitle">
-                    Registra tus datos para comenzar.
-                </p>
-
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="fullName">
-                            Nombre completo
-                        </label>
-
-                        <input
-                            id="fullName"
-                            value={fullName}
-                            onChange={(event) =>
-                                setFullName(event.target.value)
-                            }
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="email">
-                            Correo electrónico
-                        </label>
-
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(event) =>
-                                setEmail(event.target.value)
-                            }
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password">
-                            Contraseña
-                        </label>
-
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(event) =>
-                                setPassword(event.target.value)
-                            }
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="passwordConfirmation">
-                            Confirmar contraseña
-                        </label>
-
-                        <input
-                            id="passwordConfirmation"
-                            type="password"
-                            value={passwordConfirmation}
-                            onChange={(event) =>
-                                setPasswordConfirmation(
-                                    event.target.value,
-                                )
-                            }
-                        />
-                    </div>
-
-                    {error && (
-                        <p className="form-error">
-                            {error}
-                        </p>
-                    )}
-
-                    <button
-                        className="auth-button"
-                        type="submit"
-                    >
-                        Crear cuenta
-                    </button>
-                </form>
-
-                <p className="auth-link">
-                    ¿Ya tienes cuenta?{" "}
-                    <Link to="/login">
-                        Iniciar sesión
-                    </Link>
-                </p>
-            </section>
-        </main>
+      <Loader
+        fullScreen
+        message="Creando cuenta..."
+      />
     );
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="auth-card">
+        <h1>
+          Crear cuenta
+        </h1>
+
+        <p className="auth-subtitle">
+          Registra tus datos para
+          comenzar.
+        </p>
+
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+        >
+          <div className="form-group">
+            <label htmlFor="fullName">
+              Nombre completo
+            </label>
+
+            <input
+              ref={fullNameRef}
+              id="fullName"
+              type="text"
+              autoComplete="name"
+              value={fullName}
+              className={
+                fieldErrors.fullName
+                  ? "input-error"
+                  : ""
+              }
+              aria-invalid={
+                Boolean(
+                  fieldErrors.fullName,
+                )
+              }
+              onChange={(event) => {
+                const sanitizedValue =
+                  event.target.value
+                    .replace(
+                      /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g,
+                      "",
+                    )
+                    .replace(
+                      /\s{2,}/g,
+                      " ",
+                    );
+
+                setFullName(
+                  sanitizedValue,
+                );
+
+                clearFieldError(
+                  "fullName",
+                );
+              }}
+            />
+
+            {fieldErrors.fullName && (
+              <span className="field-error">
+                {
+                  fieldErrors.fullName
+                }
+              </span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">
+              Correo electrónico
+            </label>
+
+            <input
+              ref={emailRef}
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              className={
+                fieldErrors.email
+                  ? "input-error"
+                  : ""
+              }
+              aria-invalid={
+                Boolean(
+                  fieldErrors.email,
+                )
+              }
+              onChange={(event) => {
+                setEmail(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  "email",
+                );
+              }}
+            />
+
+            {fieldErrors.email && (
+              <span className="field-error">
+                {
+                  fieldErrors.email
+                }
+              </span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">
+              Contraseña
+            </label>
+
+            <input
+              ref={passwordRef}
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              className={
+                fieldErrors.password
+                  ? "input-error"
+                  : ""
+              }
+              aria-invalid={
+                Boolean(
+                  fieldErrors.password,
+                )
+              }
+              onChange={(event) => {
+                setPassword(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  "password",
+                );
+
+                if (
+                  passwordConfirmation
+                ) {
+                  clearFieldError(
+                    "passwordConfirmation",
+                  );
+                }
+              }}
+            />
+
+            {fieldErrors.password && (
+              <span className="field-error">
+                {
+                  fieldErrors.password
+                }
+              </span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="passwordConfirmation">
+              Confirmar contraseña
+            </label>
+
+            <input
+              ref={
+                passwordConfirmationRef
+              }
+              id="passwordConfirmation"
+              type="password"
+              autoComplete="new-password"
+              value={
+                passwordConfirmation
+              }
+              className={
+                fieldErrors.passwordConfirmation
+                  ? "input-error"
+                  : ""
+              }
+              aria-invalid={
+                Boolean(
+                  fieldErrors.passwordConfirmation,
+                )
+              }
+              onChange={(event) => {
+                setPasswordConfirmation(
+                  event.target.value,
+                );
+
+                clearFieldError(
+                  "passwordConfirmation",
+                );
+              }}
+            />
+
+            {fieldErrors.passwordConfirmation && (
+              <span className="field-error">
+                {
+                  fieldErrors.passwordConfirmation
+                }
+              </span>
+            )}
+          </div>
+
+          {error && (
+            <p className="form-error">
+              {error}
+            </p>
+          )}
+
+          <button
+            className="auth-button"
+            type="submit"
+            disabled={loading}
+          >
+            Crear cuenta
+          </button>
+        </form>
+
+        <p className="auth-link">
+          ¿Ya tienes cuenta?{" "}
+          <Link to="/login">
+            Iniciar sesión
+          </Link>
+        </p>
+      </section>
+    </main>
+  );
 }
