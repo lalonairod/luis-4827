@@ -307,6 +307,19 @@ export function BalanceModal({
 
       if (
         transactionError.status ===
+        "error" &&
+        transactionError.status_detail ===
+        "request_timeout"
+      ) {
+        setError(
+          "La solicitud a SnailPay tardó demasiado. Intenta nuevamente.",
+        );
+
+        return;
+      }
+
+      if (
+        transactionError.status ===
         "error"
       ) {
         setError(

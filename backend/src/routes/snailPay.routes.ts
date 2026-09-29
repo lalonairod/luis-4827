@@ -75,9 +75,6 @@ const paymentSchema = z.object({
  * Genera la información base utilizada en todas las respuestas
  * del servicio SnailPay.
  *
- * Incluye datos comunes como el identificador de la transacción,
- * monto, fecha de creación, referencia y datos del pagador.
- *
  * @param data - Datos de pago previamente validados.
  * @returns La información base de la respuesta SnailPay.
  */
@@ -109,21 +106,8 @@ function createBaseResponse(
 }
 
 /**
- * Procesa una solicitud de carga de saldo mediante el
- * servicio simulado SnailPay.
- *
- * El endpoint puede responder con los siguientes escenarios:
- *
- * - 200: transacción aprobada.
- * - 400: datos de solicitud inválidos.
- * - 402: transacción rechazada.
- * - 500: error interno simulado.
- *
- * Para obtener una transacción aprobada deben enviarse las
- * credenciales ficticias configuradas para la prueba.
- *
- * El error interno puede simularse enviando el encabezado:
- * `x-simulate-system-error: true`.
+ * Procesa una solicitud de carga de saldo mediante
+ * el servicio simulado SnailPay.
  */
 snailPayRouter.post(
   "/charge",
@@ -134,15 +118,54 @@ snailPayRouter.post(
       );
 
     if (!validation.success) {
+      const body =
+        req.body ?? {};
+
+      const response = {
+        id:
+          crypto.randomUUID(),
+        status:
+          "rejected",
+        status_detail:
+          "invalid_request",
+        transaction_amount:
+          typeof body.amount ===
+          "number"
+            ? body.amount
+            : 0,
+        date_created:
+          new Date().toISOString(),
+        authorization_code:
+          null,
+        reference:
+          `SNAIL-${Date.now()}`,
+        payer_id:
+          typeof body.payerId ===
+          "string"
+            ? body.payerId
+            : "",
+        payer_email:
+          typeof body.payerEmail ===
+          "string"
+            ? body.payerEmail
+            : "",
+        card_number:
+          typeof body.cardNumber ===
+          "string"
+            ? body.cardNumber
+            : "",
+        cvv:
+          typeof body.cvv ===
+          "string"
+            ? body.cvv
+            : "",
+        errors:
+          validation.error.flatten(),
+      };
+
       return res
         .status(400)
-        .json({
-          status: "rejected",
-          status_detail:
-            "invalid_request",
-          errors:
-            validation.error.flatten(),
-        });
+        .json(response);
     }
 
     const payment =

@@ -5,14 +5,15 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
+  type PieSectorShapeProps,
 } from "recharts";
 
 import { BalanceModal } from "../../components/balance-modal/BalanceModal";
@@ -88,6 +89,29 @@ const pieColors = [
 ];
 
 /**
+ * Renderiza cada segmento de la gráfica circular
+ * utilizando el color correspondiente.
+ *
+ * @param props - Propiedades del segmento generado por Recharts.
+ * @returns El segmento personalizado de la gráfica.
+ */
+function renderPieSector(
+  props: PieSectorShapeProps,
+) {
+  return (
+    <Sector
+      {...props}
+      fill={
+        pieColors[
+        props.index %
+        pieColors.length
+        ]
+      }
+    />
+  );
+}
+
+/**
  * Genera una espera asíncrona durante el tiempo indicado.
  *
  * Se utiliza únicamente para mantener visible el estado
@@ -141,6 +165,11 @@ export function DashboardPage() {
     setLoggingOut,
   ] = useState(false);
 
+  const [
+    balanceSuccessMessage,
+    setBalanceSuccessMessage,
+  ] = useState("");
+
   /**
    * Procesa el cierre de sesión del usuario.
    *
@@ -170,11 +199,14 @@ export function DashboardPage() {
   }
 
   /**
-   * Actualiza el saldo del usuario después
-   * de una transacción aprobada por SnailPay.
-   *
-   * @param amount - Monto acreditado al saldo.
-   */
+ * Actualiza el saldo del usuario después
+ * de una transacción aprobada por SnailPay.
+ *
+ * También informa visualmente al usuario
+ * que la operación fue aprobada.
+ *
+ * @param amount - Monto acreditado al saldo.
+ */
   function handleBalanceSuccess(
     amount: number,
   ) {
@@ -182,6 +214,12 @@ export function DashboardPage() {
       updateUserBalance(amount);
 
     setUser(updatedUser);
+
+    setBalanceSuccessMessage(
+      `Operación aprobada por SnailPay. Se acreditaron $${amount.toFixed(
+        2,
+      )} a tu saldo.`,
+    );
   }
 
   if (loggingOut) {
@@ -237,15 +275,29 @@ export function DashboardPage() {
         <button
           className="primary-button"
           type="button"
-          onClick={() =>
+          onClick={() => {
+            setBalanceSuccessMessage(
+              "",
+            );
+
             setShowBalanceModal(
               true,
-            )
-          }
+            );
+          }}
         >
           Cargar saldo
         </button>
       </section>
+
+      {balanceSuccessMessage && (
+        <div className="payment-message payment-message-success">
+          <span>✓</span>
+
+          <p>
+            {balanceSuccessMessage}
+          </p>
+        </div>
+      )}
 
       <section className="dashboard-grid">
         <article className="card">
@@ -272,27 +324,8 @@ export function DashboardPage() {
                   innerRadius={65}
                   outerRadius={100}
                   paddingAngle={4}
-                >
-                  {betData.map(
-                    (
-                      entry,
-                      index,
-                    ) => (
-                      <Cell
-                        key={
-                          entry.name
-                        }
-                        fill={
-                          pieColors[
-                            index %
-                              pieColors.length
-                          ]
-                        }
-                      />
-                    ),
-                  )}
-                </Pie>
-
+                  shape={renderPieSector}
+                />
                 <Tooltip />
                 <Legend />
               </PieChart>

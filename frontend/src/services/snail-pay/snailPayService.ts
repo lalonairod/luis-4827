@@ -22,6 +22,12 @@ const TRANSACTION_KEY =
 const MINIMUM_LOADER_TIME = 700;
 
 /**
+ * Tiempo máximo permitido para recibir una respuesta
+ * del servicio SnailPay.
+ */
+const REQUEST_TIMEOUT = 5000;
+
+/**
  * Genera una espera asíncrona durante el tiempo indicado.
  *
  * @param milliseconds - Tiempo de espera en milisegundos.
@@ -43,22 +49,10 @@ function wait(
 /**
  * Procesa una carga de saldo mediante el servicio SnailPay.
  *
- * Envía los datos de pago al backend y permite simular
- * un error interno mediante un encabezado HTTP.
- *
- * Durante el procesamiento:
- * - Registra el tiempo de respuesta.
- * - Reporta respuestas lentas en consola.
- * - Mantiene un tiempo mínimo de carga visual.
- * - Persiste la última respuesta recibida en localStorage.
- * - Propaga las respuestas de error para que sean gestionadas
- *   por la interfaz.
- *
  * @param payment - Datos requeridos para procesar la transacción.
  * @param simulateSystemError - Indica si debe simularse un error interno.
  * @returns La respuesta generada por SnailPay.
- * @throws La respuesta del servicio cuando la operación no es exitosa
- * o el error producido durante la comunicación.
+ * @throws La respuesta del servicio o un error de timeout.
  */
 export async function chargeBalance(
   payment: SnailPayRequest,
@@ -67,11 +61,25 @@ export async function chargeBalance(
   const startedAt =
     performance.now();
 
+  const controller =
+    new AbortController();
+
+  const timeoutId =
+    window.setTimeout(
+      () => {
+        controller.abort();
+      },
+      REQUEST_TIMEOUT,
+    );
+
   try {
     const response = await fetch(
       `${API_URL}/charge`,
       {
         method: "POST",
+
+        signal:
+          controller.signal,
 
         headers: {
           "Content-Type":
@@ -79,9 +87,9 @@ export async function chargeBalance(
 
           ...(simulateSystemError
             ? {
-              "x-simulate-system-error":
-                "true",
-            }
+                "x-simulate-system-error":
+                  "true",
+              }
             : {}),
         },
 
@@ -137,6 +145,53 @@ export async function chargeBalance(
       performance.now() -
       startedAt;
 
+    if (
+      error instanceof DOMException &&
+      error.name ===
+        "AbortError"
+    ) {
+      const timeoutResponse:
+        SnailPayResponse = {
+        id:
+          crypto.randomUUID(),
+        status:
+          "error",
+        status_detail:
+          "request_timeout",
+        transaction_amount:
+          payment.amount,
+        date_created:
+          new Date().toISOString(),
+        authorization_code:
+          null,
+        reference:
+          `SNAIL-TIMEOUT-${Date.now()}`,
+        payer_id:
+          payment.payerId,
+        payer_email:
+          payment.payerEmail,
+        card_number:
+          payment.cardNumber,
+        cvv:
+          payment.cvv,
+      };
+
+      localStorage.setItem(
+        TRANSACTION_KEY,
+        JSON.stringify(
+          timeoutResponse,
+        ),
+      );
+
+      console.error(
+        `[SnailPay] Timeout después de ${Math.round(
+          elapsed,
+        )} ms`,
+      );
+
+      throw timeoutResponse;
+    }
+
     console.error(
       `[SnailPay] Error después de ${Math.round(
         elapsed,
@@ -145,5 +200,9 @@ export async function chargeBalance(
     );
 
     throw error;
+  } finally {
+    window.clearTimeout(
+      timeoutId,
+    );
   }
 }

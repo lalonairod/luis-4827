@@ -302,4 +302,84 @@ describe("SnailPay Service", () => {
       "x-simulate-system-error",
     );
   });
+
+  it("should abort the SnailPay request when the timeout is exceeded", async () => {
+    const fetchMock = vi.fn(
+      (
+        _url: string,
+        options?: RequestInit,
+      ) =>
+        new Promise(
+          (
+            _resolve,
+            reject,
+          ) => {
+            options?.signal?.addEventListener(
+              "abort",
+              () => {
+                reject(
+                  new DOMException(
+                    "The operation was aborted.",
+                    "AbortError",
+                  ),
+                );
+              },
+            );
+          },
+        ),
+    );
+
+    vi.stubGlobal(
+      "fetch",
+      fetchMock,
+    );
+
+    const expectation = expect(
+      chargeBalance(validPayment),
+    ).rejects.toMatchObject({
+      status: "error",
+      status_detail:
+        "request_timeout",
+      transaction_amount: 500,
+      payer_id: "user-123",
+      payer_email:
+        "test@example.com",
+      card_number:
+        "1234123412341234",
+      cvv: "543",
+    });
+
+    await vi.advanceTimersByTimeAsync(
+      5000,
+    );
+
+    await expectation;
+
+    expect(fetchMock).toHaveBeenCalledTimes(
+      1,
+    );
+
+    const storedTransaction =
+      localStorage.getItem(
+        "snail_last_transaction",
+      );
+
+    expect(
+      storedTransaction,
+    ).not.toBeNull();
+
+    expect(
+      JSON.parse(
+        storedTransaction!,
+      ),
+    ).toMatchObject({
+      status: "error",
+      status_detail:
+        "request_timeout",
+      transaction_amount: 500,
+      card_number:
+        "1234123412341234",
+      cvv: "543",
+    });
+  });
 });
