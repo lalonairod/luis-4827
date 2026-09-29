@@ -1,0 +1,601 @@
+# SnailPay Racing Dashboard
+
+Aplicación web full-stack desarrollada con React, Express y TypeScript.
+
+El proyecto simula un dashboard de carreras de caracoles y permite registrar usuarios, iniciar sesión, consultar información simulada de apuestas y carreras, y cargar saldo mediante un proveedor de pagos ficticio llamado **SnailPay**.
+
+La aplicación fue diseñada como una simulación local. Los datos de usuario, sesión, saldo y última transacción se almacenan mediante `localStorage`.
+
+---
+
+## Tecnologías
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- React Router
+- Recharts
+- Vitest
+- ESLint
+
+### Backend
+
+- Node.js
+- Express
+- TypeScript
+- Zod
+- Vitest
+- Supertest
+
+---
+
+## Estructura del proyecto
+
+```text
+snail-racing/
+├── backend/
+│   ├── src/
+│   │   ├── routes/
+│   │   ├── tests/
+│   │   ├── types/
+│   │   ├── app.ts
+│   │   └── server.ts
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── tests/
+│   │   ├── types/
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   └── main.tsx
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.ts
+│
+└── README.md
+```
+
+---
+
+## Funcionalidades principales
+
+### Autenticación
+
+La autenticación se simula completamente en el frontend.
+
+La aplicación permite:
+
+- Registrar un usuario.
+- Validar los campos del formulario.
+- Normalizar el correo electrónico.
+- Almacenar la contraseña como hash SHA-256.
+- Iniciar sesión.
+- Mantener la sesión después de recargar la aplicación.
+- Cerrar sesión.
+- Proteger el dashboard mediante rutas privadas.
+- Evitar el acceso a login y registro cuando ya existe una sesión válida.
+- Detectar y eliminar datos de sesión inválidos o corruptos.
+
+La aplicación simula un único usuario almacenado localmente.
+
+### Dashboard
+
+Después de iniciar sesión se muestra:
+
+- Nombre del usuario.
+- Saldo disponible.
+- Resumen de apuestas ganadas y perdidas.
+- Gráfica de resultados por caracol.
+- Seis carreras simuladas.
+- Acceso al flujo de carga de saldo.
+- Cierre de sesión.
+
+Los datos de apuestas y carreras son simulados.
+
+### SnailPay
+
+SnailPay es un proveedor de pagos ficticio implementado mediante una API Express.
+
+La integración permite reproducir:
+
+- Transacciones aprobadas.
+- Transacciones rechazadas.
+- Solicitudes inválidas.
+- Errores internos del proveedor.
+- Persistencia de la última respuesta.
+- Actualización inmediata del saldo después de una operación aprobada.
+- Medición del tiempo de respuesta del servicio.
+
+---
+
+## Requisitos previos
+
+Es necesario tener instalados:
+
+```text
+Node.js
+npm
+```
+
+Se recomienda utilizar una versión moderna de Node.js compatible con Vite y Express.
+
+---
+
+## Instalación
+
+Clona el repositorio y entra al directorio del proyecto.
+
+Después instala las dependencias del backend:
+
+```bash
+cd backend
+npm install
+```
+
+Instala las dependencias del frontend:
+
+```bash
+cd ../frontend
+npm install
+```
+
+---
+
+## Variables de entorno
+
+El frontend permite configurar la URL del servicio SnailPay mediante una variable de entorno.
+
+El archivo:
+
+```text
+frontend/.env.example
+```
+
+contiene:
+
+```env
+VITE_API_URL=http://localhost:3001/api/snailpay
+```
+
+Para desarrollo local puede crearse:
+
+```text
+frontend/.env
+```
+
+con el mismo contenido.
+
+Si `VITE_API_URL` no está configurada, la aplicación utiliza la URL local configurada como valor por defecto.
+
+---
+
+## Ejecución
+
+La aplicación requiere ejecutar backend y frontend por separado.
+
+### Backend
+
+Desde:
+
+```text
+backend/
+```
+
+ejecuta:
+
+```bash
+npm run dev
+```
+
+El servidor quedará disponible en:
+
+```text
+http://localhost:3001
+```
+
+Puede verificarse mediante:
+
+```text
+GET http://localhost:3001/api/health
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "ok",
+  "message": "API running"
+}
+```
+
+### Frontend
+
+Desde:
+
+```text
+frontend/
+```
+
+ejecuta:
+
+```bash
+npm run dev
+```
+
+Vite mostrará en consola la dirección local donde está disponible la aplicación.
+
+---
+
+## Build
+
+### Backend
+
+```bash
+cd backend
+npm run build
+```
+
+Para ejecutar el resultado compilado:
+
+```bash
+npm start
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm run build
+```
+
+Para previsualizar el build:
+
+```bash
+npm run preview
+```
+
+---
+
+## Pruebas automatizadas
+
+### Backend
+
+Desde:
+
+```text
+backend/
+```
+
+ejecuta:
+
+```bash
+npm test -- --run
+```
+
+Las pruebas verifican diferentes respuestas del endpoint SnailPay, incluyendo transacciones aprobadas, rechazadas, errores internos y validaciones de los datos recibidos.
+
+### Frontend
+
+Desde:
+
+```text
+frontend/
+```
+
+ejecuta:
+
+```bash
+npm run test:run
+```
+
+Las pruebas cubren principalmente:
+
+- Registro de usuario.
+- Normalización de correo.
+- Inicio de sesión.
+- Persistencia de sesión.
+- Logout.
+- Validación de sesiones inconsistentes.
+- Recuperación ante datos corruptos en `localStorage`.
+- Actualización del saldo.
+- Comunicación con SnailPay.
+- Respuestas aprobadas y rechazadas.
+- Errores del servicio.
+
+También puede ejecutarse ESLint mediante:
+
+```bash
+npm run lint
+```
+
+---
+
+# SnailPay
+
+## Endpoint
+
+```text
+POST /api/snailpay/charge
+```
+
+Ejemplo de request:
+
+```json
+{
+  "cardNumber": "1234123412341234",
+  "expirationDate": "12/26",
+  "cvv": "543",
+  "fullName": "Eduardo",
+  "amount": 500,
+  "payerId": "USER_ID",
+  "payerEmail": "test@example.com"
+}
+```
+
+---
+
+## Transacción aprobada
+
+Para obtener una operación aprobada deben utilizarse exactamente los siguientes datos ficticios:
+
+```text
+Número de tarjeta: 1234123412341234
+Vencimiento:       12/26
+CVV:               543
+```
+
+El nombre debe contener un valor y el monto debe ser mayor a cero.
+
+La respuesta utiliza:
+
+```text
+HTTP 200
+status: approved
+status_detail: accredited
+```
+
+Ejemplo:
+
+```json
+{
+  "id": "generated-transaction-id",
+  "status": "approved",
+  "status_detail": "accredited",
+  "transaction_amount": 500,
+  "date_created": "2026-09-29T00:00:00.000Z",
+  "authorization_code": "AUTH-123456",
+  "reference": "SNAIL-1234567890",
+  "payer_id": "USER_ID",
+  "payer_email": "test@example.com",
+  "card_number": "1234123412341234",
+  "cvv": "543"
+}
+```
+
+Cuando la respuesta es aprobada, el saldo del usuario se actualiza inmediatamente.
+
+---
+
+## Transacción rechazada
+
+Para simular una transacción rechazada pueden utilizarse datos con formato válido pero diferentes a las credenciales de aprobación.
+
+Ejemplo:
+
+```json
+{
+  "cardNumber": "1111111111111111",
+  "expirationDate": "12/26",
+  "cvv": "543",
+  "fullName": "Jesus Eduardo Perez",
+  "amount": 500,
+  "payerId": "USER_ID",
+  "payerEmail": "test@example.com"
+}
+```
+
+La respuesta utiliza:
+
+```text
+HTTP 402
+status: rejected
+status_detail: card_declined
+```
+
+Una operación rechazada no modifica el saldo.
+
+---
+
+## Solicitud inválida
+
+El backend valida los datos recibidos mediante Zod.
+
+Por ejemplo:
+
+```json
+{
+  "cardNumber": "123",
+  "expirationDate": "12/26",
+  "cvv": "543",
+  "fullName": "Eduardo",
+  "amount": 500,
+  "payerId": "USER_ID",
+  "payerEmail": "test@example.com"
+}
+```
+
+produce:
+
+```text
+HTTP 400
+status: rejected
+status_detail: invalid_request
+```
+
+Entre las validaciones se encuentran:
+
+```text
+Tarjeta      16 dígitos
+Vencimiento  MM/AA
+CVV          3 dígitos
+Nombre       obligatorio
+Monto        mayor a cero
+Payer ID     obligatorio
+Email        formato válido
+```
+
+---
+
+## Error interno simulado
+
+Puede reproducirse un error interno de SnailPay enviando el encabezado:
+
+```text
+x-simulate-system-error: true
+```
+
+La respuesta utiliza:
+
+```text
+HTTP 500
+status: error
+status_detail: internal_processing_error
+```
+
+También puede reproducirse desde la interfaz activando:
+
+```text
+Simular error interno de SnailPay
+```
+
+antes de realizar la operación.
+
+El saldo no se modifica cuando ocurre un error interno.
+
+---
+
+## Persistencia local
+
+La simulación utiliza las siguientes claves de `localStorage`:
+
+```text
+snail_user
+snail_session
+snail_last_transaction
+```
+
+`snail_user` almacena la información del usuario y su saldo.
+
+`snail_session` identifica la sesión activa.
+
+`snail_last_transaction` conserva la última respuesta recibida desde SnailPay.
+
+La sesión se valida contra el usuario almacenado antes de permitir acceso a las rutas protegidas.
+
+---
+
+## Consideraciones de seguridad
+
+Este proyecto implementa una simulación local y no debe interpretarse como una arquitectura de autenticación o procesamiento de pagos para producción.
+
+La contraseña se transforma utilizando SHA-256 antes de ser almacenada, pero el proceso ocurre completamente en el cliente. En una aplicación real, la autenticación debería realizarse en un backend utilizando mecanismos de almacenamiento de contraseñas diseñados para ese propósito y sesiones o tokens administrados de forma segura.
+
+Por requerimiento de la simulación, la respuesta de SnailPay incluye el número completo de tarjeta y el CVV ficticios, y la última transacción se almacena en `localStorage`.
+
+En un sistema real:
+
+```text
+No se debe almacenar el CVV.
+No se debe persistir el número completo de tarjeta en localStorage.
+La información sensible debe gestionarse conforme a los estándares de seguridad aplicables.
+```
+
+Todos los datos de tarjeta utilizados por esta aplicación son ficticios.
+
+---
+
+## Decisiones técnicas
+
+### Separación de responsabilidades
+
+La aplicación se organizó separando:
+
+```text
+components
+pages
+services
+types
+tests
+routes
+```
+
+Los componentes se encargan principalmente de presentación e interacción, mientras que la lógica de autenticación y comunicación con SnailPay se concentra en servicios.
+
+### TypeScript
+
+Frontend y backend utilizan TypeScript para mantener contratos explícitos entre los diferentes componentes de la aplicación.
+
+Los modelos de solicitud y respuesta de SnailPay están definidos mediante tipos independientes.
+
+### Validación
+
+El frontend realiza validaciones antes de enviar información al servicio para ofrecer retroalimentación inmediata al usuario.
+
+El backend realiza su propia validación mediante Zod y no depende de las validaciones realizadas por el frontend.
+
+### Manejo de estados de carga
+
+Los procesos que requieren retroalimentación visual utilizan un componente Loader reutilizable.
+
+Se utiliza durante operaciones como:
+
+```text
+Inicio de sesión
+Cierre de sesión
+Registro
+Procesamiento de pagos
+```
+
+### Rutas
+
+Las rutas se dividen en:
+
+```text
+PublicRoute
+ProtectedRoute
+```
+
+`PublicRoute` evita que usuarios con sesión válida regresen a login o registro.
+
+`ProtectedRoute` evita acceder al dashboard sin una sesión válida.
+
+### Diseño responsive
+
+La interfaz se adapta a diferentes tamaños de pantalla, incluyendo escritorio, tablet y dispositivos móviles.
+
+El modal de pago cambia su distribución en pantallas pequeñas para mantener accesibles los campos y las acciones principales.
+
+---
+
+## Alcance
+
+La aplicación implementa un flujo funcional de:
+
+```text
+Registro
+→ Login
+→ Dashboard
+→ Carga de saldo
+→ Actualización del balance
+→ Persistencia
+→ Logout
+```
+
+Las carreras y apuestas son información simulada y no existe un motor real de carreras o apuestas.
