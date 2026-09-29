@@ -109,6 +109,44 @@ describe("SnailPay API", () => {
       });
     });
 
+    it("should return the complete response contract for an invalid request", async () => {
+      const response = await request(app)
+        .post("/api/snailpay/charge")
+        .send({
+          ...validPayment,
+          amount: 0,
+        });
+
+      expect(response.status).toBe(400);
+
+      expect(response.body).toMatchObject({
+        status: "rejected",
+        status_detail: "invalid_request",
+        transaction_amount: 0,
+        authorization_code: null,
+        payer_id: "user-123",
+        payer_email: "test@example.com",
+        card_number: "1234123412341234",
+        cvv: "543",
+      });
+
+      expect(response.body.id).toEqual(
+        expect.any(String),
+      );
+
+      expect(response.body.date_created).toEqual(
+        expect.any(String),
+      );
+
+      expect(response.body.reference).toEqual(
+        expect.any(String),
+      );
+
+      expect(response.body.errors).toEqual(
+        expect.any(Object),
+      );
+    });
+
     it("should reject a transaction when the amount is negative", async () => {
       const response = await request(app)
         .post("/api/snailpay/charge")
