@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -169,6 +169,26 @@ export function DashboardPage() {
     balanceSuccessMessage,
     setBalanceSuccessMessage,
   ] = useState("");
+
+  useEffect(() => {
+    if (!balanceSuccessMessage) {
+      return;
+    }
+
+    const timeoutId =
+      window.setTimeout(
+        () => {
+          setBalanceSuccessMessage("");
+        },
+        4000,
+      );
+
+    return () => {
+      window.clearTimeout(
+        timeoutId,
+      );
+    };
+  }, [balanceSuccessMessage]);
 
   /**
    * Procesa el cierre de sesión del usuario.
